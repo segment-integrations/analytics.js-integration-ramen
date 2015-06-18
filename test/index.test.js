@@ -3,356 +3,210 @@ var Analytics = require('analytics.js').constructor;
 var integration = require('analytics.js-integration');
 var sandbox = require('clear-env');
 var tester = require('analytics.js-integration-tester');
-var Intercom = require('../lib/');
+var Ramen = require('../lib/');
 
-describe('Intercom', function() {
+describe('Ramen', function() {
   var analytics;
-  var intercom;
+  var ramen;
   var options = {
-    appId: 'a3vy8ufv'
+    organization_id: '6389149'
   };
 
   beforeEach(function() {
     analytics = new Analytics();
-    intercom = new Intercom(options);
-    analytics.use(Intercom);
+    ramen = new Ramen(options);
+    analytics.use(Ramen);
     analytics.use(tester);
-    analytics.add(intercom);
+    analytics.add(ramen);
   });
 
   afterEach(function() {
     analytics.restore();
     analytics.reset();
-    intercom.reset();
+    ramen.reset();
     sandbox();
   });
 
   it('should have the right settings', function() {
-    analytics.compare(Intercom, integration('Intercom')
-      .global('Intercom')
-      .option('activator', '#IntercomDefaultWidget')
-      .option('appId', '')
-      .tag('<script src="https://widget.intercom.io/widget/{{ appId }}">'));
+    analytics.compare(Ramen, integration('Ramen')
+      .global('Ramen')
+      .global('ramenSettings')
+      .option('organization_id', '')
+      .tag('<script src="//cdn.ramen.is/assets/ramen.js">'));
   });
 
   describe('before loading', function() {
     beforeEach(function() {
-      analytics.stub(intercom, 'load');
+      analytics.stub(ramen, 'load');
     });
 
     describe('#initialize', function() {
-      it('should create window.Intercom', function() {
-        analytics.assert(!window.Intercom);
+      it('should not create window.Ramen', function() {
+        analytics.assert(!window.ramenSettings);
+        analytics.assert(!window.Ramen);
         analytics.initialize();
         analytics.page();
-        analytics.assert(window.Intercom);
+        analytics.assert(!window.ramenSettings);
+        analytics.assert(!window.Ramen);
       });
 
       it('should call #load', function() {
         analytics.initialize();
         analytics.page();
-        analytics.called(intercom.load);
+        analytics.called(ramen.load);
       });
     });
   });
 
   describe('loading', function() {
-    it('should load', function(done) {
-      analytics.load(intercom, done);
+    it('should load', function(done){
+      analytics.load(ramen, done);
     });
   });
 
   describe('after loading', function() {
-    beforeEach(function(done) {
+    beforeEach(function(done){
       analytics.once('ready', done);
       analytics.initialize();
     });
 
-    describe('#page', function() {
+    describe('#group', function() {
       beforeEach(function() {
-        analytics.stub(window, 'Intercom');
+        analytics.stub(window.Ramen, 'go');
       });
 
-      it('should call boot first and update subsequently', function() {
-        analytics.page();
-        analytics.called(window.Intercom, 'boot', {
-          app_id: options.appId
+      it('should not call Ramen.go if ramenSettings is blank', function() {
+        analytics.group('id');
+        analytics.assert(!window.ramenSettings);
+        analytics.didNotCall(window.Ramen.go);
+      });
+
+      it('should set company ID & call Ramen.go() if ramenSettings exists', function() {
+        window.ramenSettings = {
+          organization_id: '1234567890',
+          user: { email: 'ryan@ramen.is', name: 'Ryan', id: '1234' }
+        };
+
+        analytics.group('id');
+        analytics.assert(window.ramenSettings.company.id === 'id');
+        analytics.called(window.Ramen.go);
+      });
+
+      it('should set company traits & call Ramen.go()', function() {
+        window.ramenSettings = {
+          organization_id: '1234567890',
+          user: { email: 'ryan@ramen.is', name: 'Ryan', id: '1234' }
+        };
+
+        analytics.group('id', {
+          createdAt: 'February 13, 2009 11:31:30 PM',
+          name: 'Pied Piper',
+          url: 'http://piedpiper.com'
         });
 
-        analytics.page();
-        analytics.called(window.Intercom, 'update', {
-          app_id: options.appId
-        });
+        analytics.assert(window.ramenSettings.company.id === 'id');
+        analytics.assert(window.ramenSettings.company.name === 'Pied Piper');
+        analytics.assert(window.ramenSettings.company.url === 'http://piedpiper.com');
+        analytics.assert(window.ramenSettings.company.created_at === 1234567890);
+        analytics.called(window.Ramen.go);
       });
     });
 
     describe('#identify', function() {
       beforeEach(function() {
-        analytics.stub(window, 'Intercom');
+        analytics.stub(window.Ramen, 'go');
       });
 
-      it('should call boot first and update subsequently', function() {
+      it('should not call Ramen.go if only id is passed', function() {
         analytics.identify('id');
-        analytics.called(window.Intercom, 'boot', {
-          app_id: options.appId,
-          user_id: 'id',
-          id: 'id'
-        });
+        analytics.assert(!window.ramenSettings);
+        analytics.didNotCall(window.Ramen.go);
 
         analytics.identify('id');
-        analytics.called(window.Intercom, 'update', {
-          app_id: options.appId,
-          user_id: 'id',
-          id: 'id'
-        });
+        analytics.assert(!window.ramenSettings);
+        analytics.didNotCall(window.Ramen.go);
       });
 
-      it('should send an id and traits', function() {
-        analytics.identify('id', { email: 'email@example.com' });
-        analytics.called(window.Intercom, 'boot', {
-          email: 'email@example.com',
-          app_id: options.appId,
-          user_id: 'id',
-          id: 'id'
-        });
+      it('should call Ramen.go and set correct attributes if just email passed', function() {
+        var email = 'email@example.com';
+        analytics.identify('id', { email: email });
+        analytics.assert(window.ramenSettings.organization_id === '6389149');
+        analytics.assert(window.ramenSettings.user.id === 'id');
+        analytics.assert(window.ramenSettings.user.name === email);
+        analytics.assert(window.ramenSettings.user.email === email);
+        analytics.called(window.Ramen.go);
       });
 
-      it('should send user name', function() {
-        analytics.identify('id', { name: 'john doe' });
-        analytics.called(window.Intercom, 'boot', {
-          app_id: options.appId,
-          user_id: 'id',
-          name: 'john doe',
-          id: 'id'
-        });
+      it('should call Ramen.go and set correct attributes if email & name passed', function() {
+        var email = 'email@example.com';
+        var name = 'ryan+segment@ramen.is';
+        analytics.identify('id', { email: email, name: name });
+        analytics.assert(window.ramenSettings.organization_id === '6389149');
+        analytics.assert(window.ramenSettings.user.id === 'id');
+        analytics.assert(window.ramenSettings.user.name === name);
+        analytics.assert(window.ramenSettings.user.email === email);
+        analytics.called(window.Ramen.go);
       });
 
-      it('should send first and last as name', function() {
-        analytics.identify('id', { firstName: 'john', lastName: 'doe' });
-        analytics.called(window.Intercom, 'boot', {
-          app_id: options.appId,
-          user_id: 'id',
-          firstName: 'john',
-          lastName: 'doe',
-          name: 'john doe',
-          id: 'id'
-        });
+      it('should pass along company traits', function() {
+        var email = 'email@example.com';
+        var name = 'ryan+segment@ramen.is';
+        var company = {
+          name: 'Pied Piper, Inc.',
+          url: 'http://piedpiper.com',
+          id: '987',
+          createdAt: 'February 13, 2009 11:31:30 PM'
+        };
+
+        analytics.identify('19', {email: email, name: name, company: company});
+
+        var rs_company = window.ramenSettings.company;
+        analytics.assert(rs_company.name === 'Pied Piper, Inc.');
+        analytics.assert(rs_company.url === 'http://piedpiper.com');
+        analytics.assert(rs_company.id === '987');
+        analytics.assert(rs_company.created_at === 1234567890);
       });
 
-      it('should respect .name, .firstName and .lastName', function() {
-        analytics.identify('id', { firstName: 'john', lastName: 'doe', name: 'baz' });
-        analytics.called(window.Intercom, 'boot', {
-          app_id: options.appId,
-          user_id: 'id',
-          firstName: 'john',
-          lastName: 'doe',
-          name: 'baz',
-          id: 'id'
-        });
-      });
+      it('should pass along integration options', function() {
+        var email = 'email@example.com';
+        var name = 'ryan+segment@ramen.is';
+        var auth_hash = 'authy_hasy';
+        var auth_hash_timestamp = new Date() / 1000;
+        var custom_links = [{href: 'https://ramen.is/support', title: 'Hello'}];
+        var labels = ['use', 'ramen!'];
+        var environment = 'staging';
+        var logged_in_url = 'https://align.ramen.is/manage';
+        var unknown_future_opt = '11';
+        var unknown_future_user_opt = 'user 11';
 
-      describe('date handling', function() {
-        it('should accept `Date` instances', function() {
-          var date = new Date();
-
-          analytics.identify('id', {
-            created: date,
-            company: { created: date }
-          });
-
-          analytics.called(window.Intercom, 'boot', {
-            app_id: options.appId,
-            user_id: 'id',
-            created_at: Math.floor(date / 1000),
-            company: { created_at: Math.floor(date / 1000) },
-            id: 'id'
-          });
-        });
-
-        it('should handle ISO datestrings', function() {
-          var date = new Date();
-          var isoDate = date.toISOString();
-          var unixDate = Math.floor(date / 1000);
-
-          analytics.identify('12345', {
-            createdAt: isoDate,
-            company: { created: isoDate }
-          });
-
-          analytics.called(window.Intercom, 'boot', {
-            app_id: options.appId,
-            user_id: '12345',
-            created_at: unixDate,
-            company: { created_at: unixDate },
-            id: '12345'
-          });
-        });
-
-        it('should accept Unix timestamps (in seconds)', function() {
-          var date = Math.floor(new Date().getTime() / 1000);
-
-          analytics.identify('12345', {
-            createdAt: date,
-            company: { created: date }
-          });
-
-          analytics.called(window.Intercom, 'boot', {
-            app_id: options.appId,
-            user_id: '12345',
-            created_at: date,
-            company: { created_at: date },
-            id: '12345'
-          });
-        });
-
-        it('should accept Unix timestamps (in milliseconds)', function() {
-          var date = new Date().getTime();
-
-          analytics.identify('12345', {
-            createdAt: date,
-            company: { created: date }
-          });
-
-          analytics.called(window.Intercom, 'boot', {
-            app_id: options.appId,
-            user_id: '12345',
-            created_at: Math.floor(date / 1000),
-            company: { created_at: Math.floor(date / 1000) },
-            id: '12345'
-          });
-        });
-      });
-
-      it('should allow passing a user hash', function() {
-        analytics.identify('id', {}, {
-          Intercom: { userHash: 'x' }
-        });
-        analytics.called(window.Intercom, 'boot', {
-          app_id: options.appId,
-          user_id: 'id',
-          user_hash: 'x',
-          id: 'id'
-        });
-      });
-
-      it('should allow passing increments', function() {
-        analytics.identify('id', {}, {
-          Intercom: { increments: { number: 42 } }
-        });
-        analytics.called(window.Intercom, 'boot', {
-          app_id: options.appId,
-          user_id: 'id',
-          increments: { number: 42 },
-          id: 'id'
-        });
-      });
-
-      it('should send widget settings if the activator isnt the default one.', function() {
-        intercom.options.activator = '#my-widget';
-        analytics.identify('id');
-        analytics.called(window.Intercom, 'boot', {
-          app_id: options.appId,
-          user_id: 'id',
-          id: 'id',
-          widget: {
-            activator: '#my-widget'
+        analytics.identify('id', {email: email, name: name},
+          {
+            integrations: {
+              Ramen: {
+                unknown_future_opt: unknown_future_opt,
+                environment: environment,
+                auth_hash_timestamp: auth_hash_timestamp,
+                auth_hash: auth_hash,
+                custom_links: custom_links,
+                user: {
+                  unknown_future_user_opt: unknown_future_user_opt,
+                  labels: labels,
+                  logged_in_url: logged_in_url
+                }
+              }
+            }
           }
-        });
-      });
+        );
 
-      it('should not send activator if its the default one.', function() {
-        analytics.identify('id');
-        analytics.called(window.Intercom, 'boot', {
-          app_id: options.appId,
-          user_id: 'id',
-          id: 'id'
-        });
-      });
-
-      it('should not fail when the company trait is a string', function() {
-        analytics.identify('id', { company: 'string' });
-        analytics.called(window.Intercom, 'boot', {
-          app_id: options.appId,
-          user_id: 'id',
-          id: 'id'
-        });
-      });
-
-      it('should not fail when the company trait is a number', function() {
-        analytics.identify('id', { company: 97 });
-        analytics.called(window.Intercom, 'boot', {
-          app_id: options.appId,
-          user_id: 'id',
-          id: 'id'
-        });
-      });
-
-      it('should carry over company traits set in group if a company trait exists', function() {
-        analytics.group().traits({ foo: 'bar' });
-        analytics.identify('id', { company: { name: 'name' } });
-        analytics.called(window.Intercom, 'boot', {
-          app_id: options.appId,
-          user_id: 'id',
-          id: 'id',
-          company: {
-            name: 'name',
-            foo: 'bar'
-          }
-        });
-      });
-    });
-
-    describe('#group', function() {
-      beforeEach(function() {
-        analytics.stub(window, 'Intercom');
-      });
-
-      it('should send an id', function() {
-        analytics.group('id');
-        analytics.called(window.Intercom, 'update', { company: { id: 'id' } });
-      });
-
-      it('should send an id and properties', function() {
-        analytics.group('id', { name: 'Name' });
-        analytics.called(window.Intercom, 'update', {
-          company: {
-            id: 'id',
-            name: 'Name'
-          }
-        });
-      });
-
-      it('should work with .created_at', function() {
-        analytics.group('id', { name: 'Name', createdAt: 'Jan 1, 2000 3:32:33 PM' });
-        analytics.called(window.Intercom, 'update', {
-          company: {
-            id: 'id',
-            name: 'Name',
-            created_at: 'Jan 1, 2000 3:32:33 PM'
-          }
-        });
-      });
-
-      it('should work with .created', function() {
-        analytics.group('id', { name: 'Name', created: 'Jan 1, 2000 3:32:33 PM' });
-        analytics.called(window.Intercom, 'update', {
-          company: {
-            id: 'id',
-            name: 'Name',
-            created_at: 'Jan 1, 2000 3:32:33 PM'
-          }
-        });
-      });
-    });
-
-    describe('#track', function() {
-      beforeEach(function() {
-        analytics.stub(window, 'Intercom');
-      });
-
-      it('should send an event', function() {
-        analytics.track('event');
-        analytics.called(window.Intercom, 'trackEvent', 'event', {});
+        analytics.assert(window.ramenSettings.environment === environment);
+        analytics.assert(window.ramenSettings._partner === 'segment.com');
+        analytics.assert(window.ramenSettings.auth_hash === auth_hash);
+        analytics.assert(window.ramenSettings.unknown_future_opt === unknown_future_opt);
+        analytics.assert(window.ramenSettings.timestamp === auth_hash_timestamp);
+        analytics.assert(window.ramenSettings.user.unknown_future_user_opt === unknown_future_user_opt);
+        analytics.assert(window.ramenSettings.user.labels.length === 2);
+        analytics.assert(window.ramenSettings.user.logged_in_url === logged_in_url);
+        analytics.assert(window.ramenSettings.custom_links[0].title === 'Hello');
       });
     });
   });

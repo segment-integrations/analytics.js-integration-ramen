@@ -12,7 +12,7 @@ To start, we'll get you set up with our development environment. All of our deve
 Then after forking **analytics.js-integrations** just `cd` into the folder and run `make`:
 
 ```bash
-$ cd analytics.js-integration-intercom
+$ cd analytics.js-integration-ramen
 $ make
 ```
 

@@ -1,6 +1,6 @@
-# analytics.js-integration-intercom [![Build Status][ci-badge]][ci-link]
+# analytics.js-integration-ramen [![Build Status][ci-badge]][ci-link]
 
-Intercom integration for [Analytics.js][].
+Ramen integration for [Analytics.js][].
 
 ## License
 
@@ -8,5 +8,5 @@ Released under the [MIT license](License.md).
 
 
 [Analytics.js]: https://segment.com/docs/libraries/analytics.js/
-[ci-link]: https://circleci.com/gh/segment-integrations/analytics.js-integration-intercom
-[ci-badge]: https://circleci.com/gh/segment-integrations/analytics.js-integration-intercom.svg?style=svg
+[ci-link]: https://circleci.com/gh/segment-integrations/analytics.js-integration-ramen
+[ci-badge]: https://circleci.com/gh/segment-integrations/analytics.js-integration-ramen.svg?style=svg

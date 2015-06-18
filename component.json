@@ -1,12 +1,12 @@
 {
-  "name": "analytics.js-integration-intercom",
-  "repo": "segment-integrations/analytics.js-integration-intercom",
-  "description": "The Intercom analytics.js integration.",
+  "name": "analytics.js-integration-ramen",
+  "repo": "segment-integrations/analytics.js-integration-ramen",
+  "description": "The Ramen analytics.js integration.",
   "version": "1.0.0",
   "license": "MIT",
   "main": "lib/index.js",
   "dependencies": {
-    "segmentio/alias": "0.2.1",
+    "segmentio/tick": "0.0.2",
     "segmentio/convert-dates": "0.1.0",
     "avetisk/defaults": "0.0.1",
     "segmentio/obj-case": "0.2.1",
