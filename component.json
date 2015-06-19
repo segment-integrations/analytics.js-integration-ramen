@@ -6,7 +6,7 @@
   "license": "MIT",
   "main": "lib/index.js",
   "dependencies": {
-    "segmentio/tick": "0.0.2",
+    "timoxley/next-tick": "0.0.2",
     "segmentio/convert-dates": "0.1.0",
     "avetisk/defaults": "0.0.1",
     "segmentio/obj-case": "0.2.1",

@@ -99,7 +99,7 @@ describe('Ramen', function() {
         };
 
         analytics.group('id', {
-          createdAt: 'February 13, 2009 11:31:30 PM',
+          createdAt: '2009-02-13T23:31:30.000Z',
           name: 'Pied Piper',
           url: 'http://piedpiper.com'
         });
@@ -155,7 +155,7 @@ describe('Ramen', function() {
           name: 'Pied Piper, Inc.',
           url: 'http://piedpiper.com',
           id: '987',
-          createdAt: 'February 13, 2009 11:31:30 PM'
+          createdAt: '2009-02-13T23:31:30.000Z'
         };
 
         analytics.identify('19', {email: email, name: name, company: company});
