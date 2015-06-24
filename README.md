@@ -1,6 +1,3 @@
-# analytics.js-integration-ramen
-Ramen Integration for Segment.com
-
 # analytics.js-integration-ramen [![Build Status][ci-badge]][ci-link]
 
 Ramen integration for [Analytics.js][].
