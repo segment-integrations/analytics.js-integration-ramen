@@ -200,7 +200,7 @@ describe('Ramen', function() {
         analytics.assert(traits.is_friend === true);
         analytics.assert(traits.used_coupon_at === 1234567890);
         analytics.assert(traits.createdAt === 1234567890);
-        analytics.assert(typeof traits.name === 'undefined');
+        analytics.assert(traits.name === undefined);
       });
 
       it('should pass other traits', function() {
@@ -230,7 +230,7 @@ describe('Ramen', function() {
         analytics.assert(traits.became_maven_at === 1234567890);
         analytics.assert(traits.first_purchase_at === 1234567891);
         analytics.assert(traits.lastPurchaseAt === 1234567892);
-        analytics.assert(typeof traits.email === 'undefined');
+        analytics.assert(traits.email === undefined);
 
         analytics.called(window.Ramen.go);
       });
