@@ -70,12 +70,6 @@ describe('Ramen', function() {
       analytics.initialize();
     });
 
-    describe('#version', function() {
-      it('should equal 0.2.0', function() {
-        analytics.assert(analytics.Integrations.Ramen.version() === '0.2.0');
-      });
-    });
-
     describe('#page', function() {
       beforeEach(function() {
         analytics.stub(window.Ramen, 'go');
@@ -267,6 +261,7 @@ describe('Ramen', function() {
         );
 
         analytics.assert(window.ramenSettings.environment === environment);
+        analytics.assert(window.ramenSettings.disable_location_watch === true);
         analytics.assert(window.ramenSettings._partner === 'segment.com');
         analytics.assert(window.ramenSettings.auth_hash === auth_hash);
         analytics.assert(window.ramenSettings.unknown_future_opt === unknown_future_opt);
