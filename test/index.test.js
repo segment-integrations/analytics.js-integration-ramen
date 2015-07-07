@@ -75,9 +75,14 @@ describe('Ramen', function() {
         analytics.stub(window.Ramen, 'go');
       });
 
-      it('should call Ramen.go', function() {
+      it('should not call Ramen.go', function() {
         analytics.page();
+        analytics.didNotCall(window.Ramen.go);
+      });
 
+      it('should call Ramen.go', function() {
+        analytics.identify('12345', { email: 'ryan@ramen.is' });
+        analytics.page();
         analytics.called(window.Ramen.go);
       });
     });
@@ -87,29 +92,21 @@ describe('Ramen', function() {
         analytics.stub(window.Ramen, 'go');
       });
 
-      it('should not call Ramen.go if ramenSettings is blank', function() {
+      it('should not call Ramen.go before #identify', function() {
         analytics.group('id');
         analytics.assert(!window.ramenSettings);
         analytics.didNotCall(window.Ramen.go);
       });
 
-      it('should set company ID & call Ramen.go() if ramenSettings exists', function() {
-        window.ramenSettings = {
-          organization_id: '1234567890',
-          user: { email: 'ryan@ramen.is', name: 'Ryan', id: '1234' }
-        };
-
+      it('should set company ID & call Ramen.go() after #identify', function() {
+        analytics.identify('1234', { email: 'ryan@ramen.is' });
         analytics.group('id');
         analytics.assert(window.ramenSettings.company.id === 'id');
         analytics.called(window.Ramen.go);
       });
 
       it('should set company traits & call Ramen.go()', function() {
-        window.ramenSettings = {
-          organization_id: '1234567890',
-          user: { email: 'ryan@ramen.is', name: 'Ryan', id: '1234' }
-        };
-
+        analytics.identify('1234567890', { email: 'ryan@ramen.is' });
         analytics.group('id', {
           createdAt: '2009-02-13T23:31:30.000Z',
           name: 'Pied Piper',
@@ -129,7 +126,13 @@ describe('Ramen', function() {
         analytics.stub(window.Ramen.Api, 'track_named');
       });
 
+      it('should not call Ramen.Api.track_named before #identify', function() {
+        analytics.track('New signup');
+        analytics.didNotCall(window.Ramen.Api.track_named);
+      });
+
       it('should call Ramen.Api.track_named when #track is called', function() {
+        analytics.identify('12345', { email: 'ryan@ramen.is' });
         analytics.track('New signup');
         analytics.called(window.Ramen.Api.track_named, 'New signup');
       });
