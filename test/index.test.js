@@ -70,6 +70,12 @@ describe('Ramen', function() {
       analytics.initialize();
     });
 
+    describe('#version', function() {
+      it('should equal 0.2.0', function() {
+        analytics.assert(analytics.Integrations.Ramen.version() === '0.2.0');
+      });
+    });
+
     describe('#page', function() {
       beforeEach(function() {
         analytics.stub(window.Ramen, 'go');
