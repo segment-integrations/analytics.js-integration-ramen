@@ -42,11 +42,9 @@ describe('Ramen', function() {
 
     describe('#initialize', function() {
       it('should not create window.Ramen', function() {
-        analytics.assert(!window.ramenSettings);
         analytics.assert(!window.Ramen);
         analytics.initialize();
         analytics.page();
-        analytics.assert(!window.ramenSettings);
         analytics.assert(!window.Ramen);
       });
 
@@ -94,7 +92,6 @@ describe('Ramen', function() {
 
       it('should not call Ramen.go before #identify', function() {
         analytics.group('id');
-        analytics.assert(!window.ramenSettings);
         analytics.didNotCall(window.Ramen.go);
       });
 
@@ -145,11 +142,9 @@ describe('Ramen', function() {
 
       it('should not call Ramen.go if only id is passed', function() {
         analytics.identify('id');
-        analytics.assert(!window.ramenSettings);
         analytics.didNotCall(window.Ramen.go);
 
         analytics.identify('id');
-        analytics.assert(!window.ramenSettings);
         analytics.didNotCall(window.Ramen.go);
       });
 
