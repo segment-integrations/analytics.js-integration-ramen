@@ -81,7 +81,7 @@ describe('Ramen', function() {
       it('should call Ramen.go', function() {
         analytics.identify('12345', { email: 'ryan@ramen.is' });
         analytics.page();
-        analytics.called(window.Ramen.go);
+        analytics.calledTwice(window.Ramen.go);
       });
     });
 
