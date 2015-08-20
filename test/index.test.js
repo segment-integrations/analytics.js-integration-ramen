@@ -78,7 +78,7 @@ describe('Ramen', function() {
         analytics.didNotCall(window.Ramen.go);
       });
 
-      it('should call Ramen.go', function() {
+      it('should call Ramen.go twice', function() {
         analytics.identify('12345', { email: 'ryan@ramen.is' });
         analytics.page();
         analytics.calledTwice(window.Ramen.go);
@@ -90,31 +90,16 @@ describe('Ramen', function() {
         analytics.stub(window.Ramen, 'go');
       });
 
-      it('should not call Ramen.go before #identify', function() {
-        analytics.group('id');
-        analytics.didNotCall(window.Ramen.go);
-      });
-
-      it('should set company ID & call Ramen.go() after #identify', function() {
-        analytics.identify('1234', { email: 'ryan@ramen.is' });
-        analytics.group('id');
-        analytics.assert(window.ramenSettings.company.id === 'id');
-        analytics.called(window.Ramen.go);
-      });
-
-      it('should set company traits & call Ramen.go()', function() {
-        analytics.identify('1234567890', { email: 'ryan@ramen.is' });
-        analytics.group('id', {
-          createdAt: '2009-02-13T23:31:30.000Z',
-          name: 'Pied Piper',
-          url: 'http://piedpiper.com'
+      describe('with email/id in localstorage', function() {
+        beforeEach(function() {
+          analytics.identify('user-id-x', { email: 'ryan@ramen.is' });
         });
 
-        analytics.assert(window.ramenSettings.company.id === 'id');
-        analytics.assert(window.ramenSettings.company.name === 'Pied Piper');
-        analytics.assert(window.ramenSettings.company.url === 'http://piedpiper.com');
-        analytics.assert(window.ramenSettings.company.created_at === 1234567890);
-        analytics.called(window.Ramen.go);
+        it('should call Ramen.go without #identify', function() {
+          analytics.group('id');
+          analytics.assert(window.ramenSettings.company.id === 'id');
+          analytics.calledTwice(window.Ramen.go)
+        });
       });
     });
 
