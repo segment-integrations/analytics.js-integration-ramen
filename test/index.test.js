@@ -78,10 +78,11 @@ describe('Ramen', function() {
         analytics.didNotCall(window.Ramen.go);
       });
 
-      it('should call Ramen.go twice', function() {
-        analytics.identify('12345', { email: 'ryan@ramen.is' });
+      it('should call Ramen.go once', function() {
+        analytics.user().id('12345');
+        analytics.user().traits({ email: 'ryan@ramen.is' });
         analytics.page();
-        analytics.calledTwice(window.Ramen.go);
+        analytics.called(window.Ramen.go);
       });
     });
 
@@ -96,9 +97,9 @@ describe('Ramen', function() {
         });
 
         it('should call Ramen.go without #identify', function() {
-          analytics.group('id');
-          analytics.assert(window.ramenSettings.company.id === 'id');
-          analytics.calledTwice(window.Ramen.go)
+          analytics.group('id1');
+          analytics.assert(window.ramenSettings.company.id === 'id1');
+          analytics.calledTwice(window.Ramen.go);
         });
       });
     });
@@ -114,7 +115,8 @@ describe('Ramen', function() {
       });
 
       it('should call Ramen.Api.track_named when #track is called', function() {
-        analytics.identify('12345', { email: 'ryan@ramen.is' });
+        analytics.user().id('12345');
+        analytics.user().traits({ email: 'ryan@ramen.is' });
         analytics.track('New signup');
         analytics.called(window.Ramen.Api.track_named, 'New signup');
       });
