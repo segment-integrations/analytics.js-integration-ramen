@@ -140,7 +140,7 @@ describe('Ramen', function() {
         analytics.identify('id', { email: email });
         analytics.assert(window.ramenSettings.organization_id === '6389149');
         analytics.assert(window.ramenSettings.user.id === 'id');
-        analytics.assert(window.ramenSettings.user.name === email);
+        analytics.assert(typeof window.ramenSettings.user.name === 'undefined');
         analytics.assert(window.ramenSettings.user.email === email);
         analytics.called(window.Ramen.go);
       });
