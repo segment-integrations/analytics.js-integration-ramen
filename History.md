@@ -1,4 +1,9 @@
 
+1.0.4 / 2015-09-23
+==================
+
+  * Improve flexibility of RamenJS integration
+
 1.0.3 / 2015-09-10
 ==================
 
