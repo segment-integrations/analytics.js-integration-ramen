@@ -1,3 +1,9 @@
+
+1.0.6 / 2016-05-17
+==================
+
+  * Remove  trait requirement & support anonymous users
+
 1.0.5 / 2016-05-07
 ==================
 
