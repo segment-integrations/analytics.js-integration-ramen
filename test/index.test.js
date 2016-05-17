@@ -30,7 +30,7 @@ describe('Ramen', function() {
   it('should have the right settings', function() {
     analytics.compare(Ramen, integration('Ramen')
       .global('Ramen')
-      .global('ramenSettings')
+      .global('_ramen')
       .option('organization_id', '')
       .tag('<script src="//cdn.ramen.is/assets/ramen.js">'));
   });
@@ -46,6 +46,13 @@ describe('Ramen', function() {
         analytics.initialize();
         analytics.page();
         analytics.assert(!window.Ramen);
+      });
+
+      it('should create window._ramen', function() {
+        analytics.assert(!window._ramen);
+        analytics.initialize();
+        analytics.page();
+        analytics.assert(window._ramen);
       });
 
       it('should call #load', function() {
@@ -68,193 +75,251 @@ describe('Ramen', function() {
       analytics.initialize();
     });
 
-    describe('#page', function() {
-      beforeEach(function() {
-        analytics.stub(window.Ramen, 'go');
-      });
-
-      it('should not call Ramen.go', function() {
-        analytics.page();
-        analytics.didNotCall(window.Ramen.go);
-      });
-
-      it('should call Ramen.go once', function() {
-        analytics.user().id('12345');
-        analytics.user().traits({ email: 'ryan@ramen.is' });
-        analytics.page();
-        analytics.called(window.Ramen.go);
-      });
+    it('should have created Ramen', function() {
+      analytics.assert(window.Ramen.config.settings.organization_id === '6389149');
+      analytics.assert(window._ramen.is_booted);
     });
 
-    describe('#group', function() {
+    describe('after calling #identify', function() {
       beforeEach(function() {
-        analytics.stub(window.Ramen, 'go');
+        analytics.identify('this-user');
       });
 
-      describe('with email/id in localstorage', function() {
+      describe('#page', function() {
         beforeEach(function() {
-          analytics.identify('user-id-x', { email: 'ryan@ramen.is' });
+          analytics.stub(window._ramen, 'page');
+          analytics.stub(window._ramen, 'identify');
         });
 
-        it('should call Ramen.go without #identify', function() {
+        it('should call _ramen.page & _ramen.identify', function() {
+          analytics.page();
+          analytics.didNotCall(window._ramen.identify);
+          analytics.called(window._ramen.page);
+        });
+      });
+
+      describe('#group', function() {
+        beforeEach(function() {
+          analytics.stub(window._ramen, 'group');
+          analytics.stub(window._ramen, 'identify');
+        });
+
+        it('should call _ramen.group', function() {
           analytics.group('id1');
-          analytics.assert(window.ramenSettings.company.id === 'id1');
-          analytics.calledTwice(window.Ramen.go);
+          analytics.didNotCall(window._ramen.identify);
+          analytics.called(window._ramen.group, {
+            id: 'id1'
+          });
+        });
+      });
+
+      describe('#track', function() {
+        beforeEach(function() {
+          analytics.stub(window._ramen, 'track');
+          analytics.stub(window._ramen, 'identify');
+        });
+
+        it('should call _ramen.track with just event name', function() {
+          analytics.track('New Signup');
+          analytics.didNotCall(window._ramen.identify);
+          analytics.called(window._ramen.track, 'New Signup');
         });
       });
     });
 
-    describe('#track', function() {
-      beforeEach(function() {
-        analytics.stub(window.Ramen.Api, 'track_named');
-      });
-
-      it('should not call Ramen.Api.track_named before #identify', function() {
-        analytics.track('New signup');
-        analytics.didNotCall(window.Ramen.Api.track_named);
-      });
-
-      it('should call Ramen.Api.track_named when #track is called', function() {
-        analytics.user().id('12345');
-        analytics.user().traits({ email: 'ryan@ramen.is' });
-        analytics.track('New signup');
-        analytics.called(window.Ramen.Api.track_named, 'New signup');
-      });
-    });
-
-    describe('#identify', function() {
-      beforeEach(function() {
-        analytics.stub(window.Ramen, 'go');
-      });
-
-      it('should not call Ramen.go if only id is passed', function() {
-        analytics.identify('id');
-        analytics.didNotCall(window.Ramen.go);
-
-        analytics.identify('id');
-        analytics.didNotCall(window.Ramen.go);
-      });
-
-      it('should call Ramen.go and set correct attributes if just email passed', function() {
-        var email = 'email@example.com';
-        analytics.identify('id', { email: email });
-        analytics.assert(window.ramenSettings.organization_id === '6389149');
-        analytics.assert(window.ramenSettings.user.id === 'id');
-        analytics.assert(typeof window.ramenSettings.user.name === 'undefined');
-        analytics.assert(window.ramenSettings.user.email === email);
-        analytics.called(window.Ramen.go);
-      });
-
-      it('should call Ramen.go and set correct attributes if email & name passed', function() {
-        var email = 'email@example.com';
-        var name = 'ryan+segment@ramen.is';
-        analytics.identify('id', { email: email, name: name });
-        analytics.assert(window.ramenSettings.organization_id === '6389149');
-        analytics.assert(window.ramenSettings.user.id === 'id');
-        analytics.assert(window.ramenSettings.user.name === name);
-        analytics.assert(window.ramenSettings.user.email === email);
-        analytics.called(window.Ramen.go);
-      });
-
-      it('should pass along company traits', function() {
-        var email = 'email@example.com';
-        var name = 'ryan+segment@ramen.is';
-        var company = {
-          name: 'Pied Piper, Inc.',
-          url: 'http://piedpiper.com',
-          id: '987',
-          createdAt: '2009-02-13T23:31:30.000Z',
-          is_friend: true,
-          used_coupon_at: 1234567890
-        };
-
-        analytics.identify('19', { email: email, name: name, company: company });
-
-        var rs_company = window.ramenSettings.company;
-        analytics.assert(rs_company.name === 'Pied Piper, Inc.');
-        analytics.assert(rs_company.url === 'http://piedpiper.com');
-        analytics.assert(rs_company.id === '987');
-
-        var traits = window.ramenSettings.company.traits;
-        analytics.assert(traits.is_friend === true);
-        analytics.assert(traits.used_coupon_at === 1234567890);
-        analytics.assert(traits.createdAt === 1234567890);
-        analytics.assert(traits.name === undefined);
-      });
-
-      it('should pass other traits', function() {
-        var email = 'email@example.com';
-        var name = 'ryan+segment@ramen.is';
-        analytics.identify('id', {
-          email: email,
-          name: name,
-          age: 32,
-          score: 43.1,
-          color: 'green',
-          is_friend: true,
-          became_maven_at: 1234567890,
-          first_purchase_at: '2009-02-13T23:31:31.000Z',
-          lastPurchaseAt: '2009-02-13T23:31:32.000Z'
+    describe('before calling #identify', function() {
+      describe('#page', function() {
+        beforeEach(function() {
+          analytics.stub(window._ramen, 'page');
+          analytics.stub(window._ramen, 'identify');
         });
-        analytics.assert(window.ramenSettings.organization_id === '6389149');
-        analytics.assert(window.ramenSettings.user.id === 'id');
-        analytics.assert(window.ramenSettings.user.name === name);
-        analytics.assert(window.ramenSettings.user.email === email);
 
-        var traits = window.ramenSettings.user.traits;
-        analytics.assert(traits.age === 32);
-        analytics.assert(traits.score === 43.1);
-        analytics.assert(traits.color === 'green');
-        analytics.assert(traits.is_friend === true);
-        analytics.assert(traits.became_maven_at === 1234567890);
-        analytics.assert(traits.first_purchase_at === 1234567891);
-        analytics.assert(traits.lastPurchaseAt === 1234567892);
-        analytics.assert(traits.email === undefined);
-
-        analytics.called(window.Ramen.go);
+        it('should call _ramen.page & _ramen.identify', function() {
+          analytics.page();
+          analytics.called(window._ramen.identify);
+          analytics.called(window._ramen.page);
+        });
       });
 
-      it('should pass along integration options', function() {
-        var email = 'email@example.com';
-        var name = 'ryan+segment@ramen.is';
-        var auth_hash = 'authy_hasy';
-        var auth_hash_timestamp = new Date() / 1000;
-        var custom_links = [{ href: 'https://ramen.is/support', title: 'Hello' }];
-        var labels = ['use', 'ramen!'];
-        var environment = 'staging';
-        var logged_in_url = 'https://align.ramen.is/manage';
-        var unknown_future_opt = '11';
-        var unknown_future_user_opt = 'user 11';
+      describe('#group', function() {
+        beforeEach(function() {
+          analytics.stub(window._ramen, 'group');
+          analytics.stub(window._ramen, 'identify');
+        });
 
-        analytics.identify('id', { email: email, name: name },
-          {
-            integrations: {
-              Ramen: {
-                unknown_future_opt: unknown_future_opt,
-                environment: environment,
-                auth_hash_timestamp: auth_hash_timestamp,
-                auth_hash: auth_hash,
-                custom_links: custom_links,
-                user: {
-                  unknown_future_user_opt: unknown_future_user_opt,
-                  labels: labels,
-                  logged_in_url: logged_in_url
+        it('should call _ramen.group', function() {
+          analytics.group('id1');
+          analytics.called(window._ramen.identify);
+          analytics.called(window._ramen.group, {
+            id: 'id1'
+          });
+        });
+      });
+
+      describe('#track', function() {
+        beforeEach(function() {
+          analytics.stub(window._ramen, 'track');
+          analytics.stub(window._ramen, 'identify');
+        });
+
+        it('should call _ramen.track with just event name', function() {
+          analytics.track('New Signup');
+          analytics.called(window._ramen.identify);
+          analytics.called(window._ramen.track, 'New Signup');
+        });
+      });
+
+      describe('#identify', function() {
+        beforeEach(function() {
+          analytics.stub(window._ramen, 'identify');
+        });
+
+        it('should not call _ramen.identify if no id is passed', function() {
+          analytics.identify({ a_trait: 11 });
+          analytics.didNotCall(window._ramen.identify);
+        });
+
+        it('should call _ramen.identify with the id', function() {
+          analytics.identify('users-id');
+          analytics.called(window._ramen.identify, {
+            id: 'users-id',
+            traits: {}
+          }, {});
+        });
+
+        it('should call _ramen.identify and set correct attributes if just email passed', function() {
+          var email = 'email@example.com';
+          analytics.identify('id', { email: email });
+          analytics.called(window._ramen.identify, {
+            id: 'id',
+            email: email,
+            traits: {}
+          }, {});
+        });
+
+        it('should call _ramen.identify and set correct attributes if email, name, & trait passed', function() {
+          var email = 'email@example.com';
+          var name = 'ryan+segment@ramen.is';
+          analytics.identify('id', { email: email, name: name, is_friend: true });
+
+          analytics.called(window._ramen.identify, {
+            id: 'id',
+            email: email,
+            name: name,
+            traits: { is_friend: true }
+          }, {});
+        });
+
+        it('should pass along company traits', function() {
+          var email = 'email@example.com';
+          var name = 'ryan+segment@ramen.is';
+          var company = {
+            name: 'Pied Piper, Inc.',
+            url: 'http://piedpiper.com',
+            id: '987',
+            createdAt: '2009-02-13T23:31:30.000Z',
+            is_friend: true,
+            used_coupon_at: 1234567890
+          };
+
+          analytics.identify('19', { email: email, name: name, company: company });
+
+          analytics.called(window._ramen.identify, {
+            id: '19',
+            email: email,
+            name: name,
+            company: {
+              name: 'Pied Piper, Inc.',
+              url: 'http://piedpiper.com',
+              id: '987',
+              created_at: 1234567890,
+              is_friend: true,
+              used_coupon_at: 1234567890
+            },
+            traits: {}
+          }, {});
+        });
+
+        it('should pass other traits', function() {
+          var email = 'email@example.com';
+          var name = 'ryan+segment@ramen.is';
+          analytics.identify('id', {
+            email: email,
+            name: name,
+            age: 32,
+            score: 43.1,
+            color: 'green',
+            is_friend: true,
+            became_maven_at: 1234567890,
+            first_purchase_at: '2009-02-13T23:31:31.000Z',
+            lastPurchaseAt: '2009-02-13T23:31:32.000Z'
+          });
+
+          analytics.called(window._ramen.identify, {
+            id: 'id',
+            email: email,
+            name: name,
+            traits: {
+              age: 32,
+              score: 43.1,
+              color: 'green',
+              is_friend: true,
+              became_maven_at: 1234567890,
+              first_purchase_at: 1234567891,
+              lastPurchaseAt: 1234567892
+            }
+          }, {});
+        });
+
+        it('should pass along integration options', function() {
+          var email = 'email@example.com';
+          var name = 'ryan+segment@ramen.is';
+          var auth_hash = 'authy_hasy';
+          var auth_hash_timestamp = new Date() / 1000;
+          var custom_links = [{ href: 'https://ramen.is/support', title: 'Hello' }];
+          var labels = ['use', 'ramen!'];
+          var environment = 'staging';
+          var logged_in_url = 'https://align.ramen.is/manage';
+          var unknown_future_opt = '11';
+          var unknown_future_user_opt = 'user 11';
+
+          analytics.identify('id', { email: email, name: name },
+            {
+              integrations: {
+                Ramen: {
+                  unknown_future_opt: unknown_future_opt,
+                  environment: environment,
+                  auth_hash_timestamp: auth_hash_timestamp,
+                  auth_hash: auth_hash,
+                  custom_links: custom_links,
+                  user: {
+                    unknown_future_user_opt: unknown_future_user_opt,
+                    labels: labels,
+                    logged_in_url: logged_in_url
+                  }
                 }
               }
             }
-          }
-        );
+          );
 
-        analytics.assert(window.ramenSettings.environment === environment);
-        analytics.assert(window.ramenSettings.disable_location_watch === true);
-        analytics.assert(window.ramenSettings._partner === 'segment.com');
-        analytics.assert(window.ramenSettings.auth_hash === auth_hash);
-        analytics.assert(window.ramenSettings.unknown_future_opt === unknown_future_opt);
-        analytics.assert(window.ramenSettings.timestamp === auth_hash_timestamp);
-        analytics.assert(window.ramenSettings.user.unknown_future_user_opt === unknown_future_user_opt);
-        analytics.assert(window.ramenSettings.user.labels.length === 2);
-        analytics.assert(window.ramenSettings.user.logged_in_url === logged_in_url);
-        analytics.assert(window.ramenSettings.custom_links[0].title === 'Hello');
+          analytics.called(window._ramen.identify, {
+            id: 'id',
+            email: email,
+            name: name,
+            traits: {}
+          }, {
+            unknown_future_opt: unknown_future_opt,
+            environment: environment,
+            auth_hash: auth_hash,
+            custom_links: custom_links,
+            user: {
+              unknown_future_user_opt: unknown_future_user_opt,
+              labels: labels,
+              logged_in_url: logged_in_url
+            },
+            timestamp: auth_hash_timestamp
+          });
+        });
       });
     });
   });
